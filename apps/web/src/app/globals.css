@@ -44,9 +44,9 @@ tr:last-child td { border-bottom: none; }
 tr:hover td { background: var(--gray-50); }
 
 .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
-.badge.active { background: var(--green-light); color: var(--green); }
-.badge.inactive, .badge.dead { background: var(--red-light); color: var(--red); }
-.badge.pending { background: var(--yellow-light); color: var(--yellow); }
+.badge.active, .badge.completed { background: var(--green-light); color: var(--green); }
+.badge.inactive, .badge.dead, .badge.failed { background: var(--red-light); color: var(--red); }
+.badge.pending, .badge.running, .badge.partial { background: var(--yellow-light); color: var(--yellow); }
 
 a { color: var(--green); }
 a:hover { text-decoration: underline; }
