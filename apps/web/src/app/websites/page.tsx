@@ -2,7 +2,7 @@ import { getDb } from '@/lib/db';
 import { websites, organizations, crawlRuns, pageLinks } from '@docket/db';
 import { eq, sql, count } from 'drizzle-orm';
 
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 export default async function WebsitesPage() {
   const db = getDb();
