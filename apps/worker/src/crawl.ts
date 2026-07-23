@@ -2,8 +2,8 @@ import 'dotenv/config';
 import { PlaywrightCrawler, RequestQueue, Configuration } from 'crawlee';
 import { createDb, websites, crawlRuns, crawlJobs, pages, pageLinks, pageChanges } from '@docket/db';
 import { eq, and, sql } from 'drizzle-orm';
-import { analyzeSite } from './ai.js';
-import { checkBrokenLinks } from './links.js';
+import { analyzeSite } from './ai';
+import { checkBrokenLinks } from './links';
 
 const db = createDb(process.env.DATABASE_URL!);
 
