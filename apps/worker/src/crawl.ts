@@ -157,9 +157,9 @@ async function runBatch() {
       .from(websites)
       .where(inArray(websites.domain, DOMAINS));
     if (targets.length > 0) {
-      // Delete any existing recent jobs so targeted crawls always run fresh
-      await db.execute(
-        sql`DELETE FROM crawl_jobs WHERE website_id = ANY(${targets.map(t => t.id)}::uuid[]) AND status = 'pending'`
+      // Delete any existing pending jobs so targeted crawls always run fresh
+      await db.delete(crawlJobs).where(
+        and(inArray(crawlJobs.websiteId, targets.map((t) => t.id)), eq(crawlJobs.status, 'pending'))
       );
       await db.insert(crawlJobs).values(
         targets.map((t) => ({ websiteId: t.id, status: 'pending' as const, priority: 10, batchIndex: 0, batchTotal: 1 }))
