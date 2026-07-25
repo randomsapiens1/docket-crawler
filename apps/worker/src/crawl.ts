@@ -155,13 +155,12 @@ async function runBatch() {
     const targets = await db
       .select({ id: websites.id })
       .from(websites)
-      .where(
-        and(
-          inArray(websites.domain, DOMAINS),
-          sql`${websites.id} NOT IN (SELECT website_id FROM crawl_jobs WHERE created_at > NOW() - INTERVAL '6 hours')`
-        )
-      );
+      .where(inArray(websites.domain, DOMAINS));
     if (targets.length > 0) {
+      // Delete any existing recent jobs so targeted crawls always run fresh
+      await db.execute(
+        sql`DELETE FROM crawl_jobs WHERE website_id = ANY(${targets.map(t => t.id)}::uuid[]) AND status = 'pending'`
+      );
       await db.insert(crawlJobs).values(
         targets.map((t) => ({ websiteId: t.id, status: 'pending' as const, priority: 10, batchIndex: 0, batchTotal: 1 }))
       ).onConflictDoNothing();
