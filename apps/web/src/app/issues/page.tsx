@@ -7,7 +7,6 @@ export const dynamic = 'force-dynamic';
 export default async function IssuesPage() {
   const db = getDb();
 
-  // All broken links with the page they were found on, grouped by site
   const rows = await db
     .select({
       websiteId: websites.id,
@@ -15,6 +14,7 @@ export default async function IssuesPage() {
       href: pageLinks.href,
       linkText: pageLinks.text,
       statusCode: pageLinks.statusCode,
+      isInternal: pageLinks.isInternal,
       foundOnUrl: pages.url,
     })
     .from(pageLinks)
@@ -24,13 +24,7 @@ export default async function IssuesPage() {
     .orderBy(sql`${websites.domain} ASC, ${pageLinks.href} ASC`)
     .limit(500);
 
-  // Group by site
-  const bySite = new Map<string, {
-    domain: string;
-    websiteId: string;
-    links: typeof rows;
-  }>();
-
+  const bySite = new Map<string, { domain: string; websiteId: string; links: typeof rows }>();
   for (const row of rows) {
     if (!bySite.has(row.websiteId)) {
       bySite.set(row.websiteId, { domain: row.domain, websiteId: row.websiteId, links: [] });
@@ -39,104 +33,130 @@ export default async function IssuesPage() {
   }
 
   const sites = [...bySite.values()].sort((a, b) => b.links.length - a.links.length);
-  const totalBroken = rows.length;
+  const timeout = rows.filter((r) => r.statusCode === null).length;
+  const fourxx = rows.filter((r) => r.statusCode !== null && r.statusCode < 500).length;
+  const fivexx = rows.filter((r) => r.statusCode !== null && r.statusCode >= 500).length;
 
   return (
     <>
       <div className="page-header">
         <h1>Broken Links Report</h1>
-        <p>
-          {totalBroken} broken links found across {sites.length} sites.
-          {' '}Links that return 4xx/5xx or timed out.
-        </p>
+        <p>Links returning 4xx or 5xx HTTP status, or that timed out. Sorted by worst site first.</p>
       </div>
 
-      {sites.length === 0 && (
-        <div className="table-wrap" style={{ padding: '2rem', textAlign: 'center', color: 'var(--gray-500)' }}>
-          No broken links found yet. Run a crawl first.
+      {rows.length > 0 && (
+        <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px,1fr))', marginBottom: '1.5rem' }}>
+          <div className="stat-card">
+            <div className="label">Total Broken</div>
+            <div className="value" style={{ color: 'var(--brand)' }}>{rows.length}</div>
+            <div className="sub">across {sites.length} sites</div>
+          </div>
+          <div className="stat-card">
+            <div className="label">4xx Errors</div>
+            <div className="value">{fourxx}</div>
+            <div className="sub">not found / forbidden</div>
+          </div>
+          <div className="stat-card">
+            <div className="label">5xx Errors</div>
+            <div className="value">{fivexx}</div>
+            <div className="sub">server errors</div>
+          </div>
+          <div className="stat-card">
+            <div className="label">Timeouts</div>
+            <div className="value">{timeout}</div>
+            <div className="sub">no response</div>
+          </div>
         </div>
       )}
 
-      {sites.map((site) => (
-        <div key={site.websiteId} className="table-wrap" style={{ marginBottom: '1.5rem' }}>
-          <div style={{
-            padding: '0.875rem 1.25rem',
-            borderBottom: '1px solid var(--gray-200)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem',
-            background: 'var(--gray-50)',
-          }}>
-            <a href={`/websites/${site.websiteId}`} style={{ fontWeight: 600, fontSize: '0.95rem' }}>
-              {site.domain}
-            </a>
-            <span style={{
-              background: 'var(--red-light)',
-              color: 'var(--red)',
-              padding: '0.15rem 0.6rem',
-              borderRadius: '9999px',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-            }}>
-              {site.links.length} broken
-            </span>
+      {sites.length === 0 ? (
+        <div className="table-wrap">
+          <div className="empty-state">
+            <div className="empty-icon">✅</div>
+            <h3>No broken links found</h3>
+            <p>Run a crawl first, or all tracked sites currently have no broken links.</p>
           </div>
-          <table>
-            <thead>
-              <tr>
-                <th style={{ width: '35%' }}>Broken URL</th>
-                <th style={{ width: '35%' }}>Found On Page</th>
-                <th style={{ width: '20%' }}>Link Text</th>
-                <th style={{ width: '10%' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {site.links.map((link, i) => (
-                <tr key={i}>
-                  <td style={{ wordBreak: 'break-all' }}>
-                    <a
-                      href={link.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: 'var(--red)', fontSize: '0.8rem' }}
-                    >
-                      {link.href.length > 70 ? link.href.slice(0, 70) + '…' : link.href}
-                    </a>
-                  </td>
-                  <td style={{ wordBreak: 'break-all' }}>
-                    {link.foundOnUrl ? (
-                      <a
-                        href={link.foundOnUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: 'var(--gray-500)', fontSize: '0.8rem' }}
-                      >
-                        {link.foundOnUrl.replace(/^https?:\/\/[^/]+/, '') || '/'}
-                      </a>
-                    ) : '—'}
-                  </td>
-                  <td style={{ color: 'var(--gray-500)', fontSize: '0.8rem' }}>
-                    {link.linkText ? link.linkText.slice(0, 40) : '—'}
-                  </td>
-                  <td>
-                    <span style={{
-                      display: 'inline-block',
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: '4px',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      background: 'var(--red-light)',
-                      color: 'var(--red)',
-                    }}>
-                      {link.statusCode ?? 'timeout'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
-      ))}
+      ) : (
+        sites.map((site) => (
+          <div key={site.websiteId} className="table-wrap">
+            <div className="tw-head">
+              <a href={`/websites/${site.websiteId}`} style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                {site.domain}
+              </a>
+              <span className="pill-red">{site.links.length} broken</span>
+            </div>
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th style={{ minWidth: '260px' }}>Broken URL</th>
+                    <th style={{ minWidth: '200px' }}>Found On Page</th>
+                    <th>Link Text</th>
+                    <th>Type</th>
+                    <th>Code</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {site.links.map((link, i) => (
+                    <tr key={i}>
+                      <td style={{ wordBreak: 'break-all' }}>
+                        <a
+                          href={link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: 'var(--red)', fontSize: '0.8rem' }}
+                        >
+                          {link.href.length > 72 ? link.href.slice(0, 72) + '…' : link.href}
+                        </a>
+                      </td>
+                      <td style={{ wordBreak: 'break-word' }}>
+                        {link.foundOnUrl ? (
+                          <a
+                            href={link.foundOnUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: 'var(--gray-500)', fontSize: '0.78rem' }}
+                          >
+                            {link.foundOnUrl.replace(/^https?:\/\/[^/]+/, '') || '/'}
+                          </a>
+                        ) : '—'}
+                      </td>
+                      <td style={{ color: 'var(--gray-500)', fontSize: '0.78rem', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {link.linkText ? link.linkText.slice(0, 40) : <span style={{ color: 'var(--gray-300)' }}>—</span>}
+                      </td>
+                      <td>
+                        <span style={{
+                          fontSize: '0.7rem',
+                          fontWeight: 600,
+                          color: link.isInternal ? 'var(--brand)' : 'var(--gray-500)',
+                        }}>
+                          {link.isInternal ? 'internal' : 'external'}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{
+                          display: 'inline-block',
+                          padding: '0.15rem 0.45rem',
+                          borderRadius: '4px',
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          background: link.statusCode && link.statusCode >= 500
+                            ? '#7f1d1d22'
+                            : 'var(--red-light)',
+                          color: 'var(--red)',
+                        }}>
+                          {link.statusCode ?? 'timeout'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))
+      )}
     </>
   );
 }
