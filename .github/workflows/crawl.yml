@@ -6,8 +6,12 @@ on:
     - cron: '0 20 * * 0'
   workflow_dispatch:
     inputs:
+      domains:
+        description: 'Comma-separated domains to crawl (e.g. pmo.gov.bd,mof.gov.bd). Leave empty to crawl all.'
+        default: ''
+        required: false
       batch_total:
-        description: 'Number of parallel batches'
+        description: 'Number of parallel batches (ignored when domains is set)'
         default: '5'
         required: false
 
@@ -16,6 +20,8 @@ jobs:
     name: Crawl batch ${{ matrix.batch }}
     runs-on: ubuntu-latest
     timeout-minutes: 340
+    # When domains is specified run only batch 0; otherwise run all batches
+    if: inputs.domains == '' || inputs.domains == null || matrix.batch == 0
     strategy:
       fail-fast: false
       matrix:
@@ -43,6 +49,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           BATCH_INDEX: ${{ matrix.batch }}
-          BATCH_TOTAL: ${{ inputs.batch_total || '5' }}
+          BATCH_TOTAL: ${{ inputs.domains != '' && inputs.domains != null && '1' || inputs.batch_total || '5' }}
+          DOMAINS: ${{ inputs.domains }}
           MAX_PAGES_PER_SITE: '10'
           GITHUB_RUN_ID: ${{ github.run_id }}-${{ matrix.batch }}

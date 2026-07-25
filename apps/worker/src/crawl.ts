@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { PlaywrightCrawler, RequestQueue, Configuration } from 'crawlee';
 import { createDb, websites, crawlRuns, crawlJobs, pages, pageLinks, pageChanges } from '@docket/db';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { analyzeSite } from './ai';
 import { checkBrokenLinks } from './links';
 
@@ -11,6 +11,9 @@ const BATCH_INDEX = parseInt(process.env.BATCH_INDEX ?? '0');
 const BATCH_TOTAL = parseInt(process.env.BATCH_TOTAL ?? '1');
 const MAX_PAGES_PER_SITE = parseInt(process.env.MAX_PAGES_PER_SITE ?? '10');
 const WORKER_ID = process.env.GITHUB_RUN_ID ?? `local-${Date.now()}`;
+const DOMAINS = process.env.DOMAINS
+  ? process.env.DOMAINS.split(',').map((d) => d.trim().toLowerCase()).filter(Boolean)
+  : null;
 
 async function claimJob() {
   // Atomically claim one pending job for this batch partition
@@ -147,18 +150,36 @@ async function runBatch() {
   console.log(`Worker ${WORKER_ID} — batch ${BATCH_INDEX}/${BATCH_TOTAL}`);
 
   // Enqueue pending jobs for this batch if not already queued
-  await db.execute(
-    sql`
-      INSERT INTO crawl_jobs (website_id, status, priority, batch_index, batch_total)
-      SELECT id, 'pending', 5, (ROW_NUMBER() OVER (ORDER BY id) - 1) % ${BATCH_TOTAL}, ${BATCH_TOTAL}
-      FROM websites
-      WHERE status != 'dead'
-        AND id NOT IN (
-          SELECT website_id FROM crawl_jobs WHERE created_at > NOW() - INTERVAL '6 hours'
+  if (DOMAINS && DOMAINS.length > 0) {
+    console.log(`Targeted crawl: ${DOMAINS.join(', ')}`);
+    const targets = await db
+      .select({ id: websites.id })
+      .from(websites)
+      .where(
+        and(
+          inArray(websites.domain, DOMAINS),
+          sql`${websites.id} NOT IN (SELECT website_id FROM crawl_jobs WHERE created_at > NOW() - INTERVAL '6 hours')`
         )
-      ON CONFLICT DO NOTHING
-    `
-  );
+      );
+    if (targets.length > 0) {
+      await db.insert(crawlJobs).values(
+        targets.map((t) => ({ websiteId: t.id, status: 'pending' as const, priority: 10, batchIndex: 0, batchTotal: 1 }))
+      ).onConflictDoNothing();
+    }
+  } else {
+    await db.execute(
+      sql`
+        INSERT INTO crawl_jobs (website_id, status, priority, batch_index, batch_total)
+        SELECT id, 'pending', 5, (ROW_NUMBER() OVER (ORDER BY id) - 1) % ${BATCH_TOTAL}, ${BATCH_TOTAL}
+        FROM websites
+        WHERE status != 'dead'
+          AND id NOT IN (
+            SELECT website_id FROM crawl_jobs WHERE created_at > NOW() - INTERVAL '6 hours'
+          )
+        ON CONFLICT DO NOTHING
+      `
+    );
+  }
 
   let job = await claimJob();
   let processed = 0;
