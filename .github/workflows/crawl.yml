@@ -20,8 +20,6 @@ jobs:
     name: Crawl batch ${{ matrix.batch }}
     runs-on: ubuntu-latest
     timeout-minutes: 340
-    # When domains is specified run only batch 0; otherwise run all batches
-    if: inputs.domains == '' || inputs.domains == null || matrix.batch == 0
     strategy:
       fail-fast: false
       matrix:
@@ -39,10 +37,12 @@ jobs:
         run: npm install
 
       - name: Install Playwright browsers
+        if: inputs.domains == '' || matrix.batch == 0
         run: npx playwright install chromium --with-deps
         working-directory: apps/worker
 
       - name: Run crawler
+        if: inputs.domains == '' || matrix.batch == 0
         run: npm run crawl
         working-directory: apps/worker
         env:
