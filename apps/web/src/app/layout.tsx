@@ -4,7 +4,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://data.docket.bd'),
-  title: 'Docket | Bangladesh Government Website Monitor',
+  title: 'Docket.bd | Bangladesh Government Website Monitor',
   description:
     'Docket crawls Bangladesh government websites every week. Tracks broken links, page speed, and citizen experience across all .gov.bd domains. Free and open data.',
   keywords: [
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     'Bangladesh citizen services',
   ],
   openGraph: {
-    title: 'Docket | Bangladesh Government Website Monitor',
+    title: 'Docket.bd | Bangladesh Government Website Monitor',
     description:
       'Weekly crawl of all Bangladesh .gov.bd websites. Broken links, page health, and AI-scored citizen experience. Open data.',
     siteName: 'Docket',

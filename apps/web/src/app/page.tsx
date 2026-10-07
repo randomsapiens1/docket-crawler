@@ -49,9 +49,23 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* Data notice */}
+      <aside className="data-notice" role="note" aria-label="Data notice">
+        <strong>Data notice</strong>
+        <p>
+          This observatory is an independent, early-stage project by Docket.bd.
+          Websites are crawled automatically on a periodic schedule, so figures reflect
+          the most recent crawl rather than real-time conditions. Our methodology is
+          still being refined, and some results, particularly broken-link counts, may
+          include false positives caused by temporary outages or servers that block
+          automated checks. Please treat these figures as indicative rather than
+          definitive, and verify with the relevant website before citing them.
+        </p>
+      </aside>
+
       {/* Hero */}
       <div className="hero">
-        <div className="hero-eyebrow">Live Observatory</div>
+        <div className="hero-eyebrow">A Docket.bd Observatory</div>
         <h1>Bangladesh Government<br />Website Monitor</h1>
         <p>
           Docket crawls {fmt(totalSites)} official .gov.bd websites every week.
