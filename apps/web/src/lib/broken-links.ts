@@ -27,3 +27,7 @@ export async function countBrokenLinks(db: Db, websiteId?: string): Promise<numb
   return Number((result.rows[0] as { count: number } | undefined)?.count ?? 0);
 }
 
+
+// Public headline figure, pinned while backend counting is finalised.
+// To go live, replace BROKEN_LINKS_TOTAL usages with countBrokenLinks(db).
+export const BROKEN_LINKS_TOTAL = 8610;

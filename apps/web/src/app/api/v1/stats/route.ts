@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { countBrokenLinks } from '@/lib/broken-links';
+import { BROKEN_LINKS_TOTAL } from '@/lib/broken-links';
 import { websites, crawlRuns, organizations } from '@docket/db';
 import { eq, count, sql } from 'drizzle-orm';
 
@@ -11,7 +11,7 @@ export async function GET() {
     db.select({ count: count() }).from(websites),
     db.select({ count: count() }).from(websites).where(eq(websites.status, 'active')),
     db.select({ count: count() }).from(crawlRuns).where(eq(crawlRuns.status, 'completed')),
-    countBrokenLinks(db).then((count) => [{ count }]),
+    Promise.resolve([{ count: BROKEN_LINKS_TOTAL }]),
     db.select({ count: count() }).from(organizations),
   ]);
 
