@@ -16,15 +16,20 @@ const DOMAINS = process.env.DOMAINS
   : null;
 
 async function claimJob() {
-  // Atomically claim one pending job for this batch partition
+  // Atomically claim ONE pending job for this batch partition. Without the
+  // LIMIT 1 subquery the UPDATE claims every pending job but only the first
+  // gets crawled, leaving the rest stuck in 'running'.
   const [job] = await db
     .update(crawlJobs)
     .set({ status: 'running', startedAt: new Date(), workerId: WORKER_ID })
     .where(
-      and(
-        eq(crawlJobs.status, 'pending'),
-        sql`${crawlJobs.batchIndex} = ${BATCH_INDEX}`
-      )
+      eq(crawlJobs.id, sql`(
+        SELECT id FROM crawl_jobs
+        WHERE status = 'pending' AND batch_index = ${BATCH_INDEX}
+        ORDER BY priority DESC, created_at
+        LIMIT 1
+        FOR UPDATE SKIP LOCKED
+      )`)
     )
     .returning();
   return job ?? null;
@@ -149,6 +154,11 @@ async function crawlWebsite(websiteId: string, crawlRunId: string, rootUrl: stri
 
 async function runBatch() {
   console.log(`Worker ${WORKER_ID} — batch ${BATCH_INDEX}/${BATCH_TOTAL}`);
+
+  // Close out jobs orphaned in 'running' (crashed worker, or the old claim-all bug)
+  await db.update(crawlJobs)
+    .set({ status: 'failed', error: 'stale: never completed', completedAt: new Date() })
+    .where(and(eq(crawlJobs.status, 'running'), sql`${crawlJobs.startedAt} < NOW() - INTERVAL '6 hours'`));
 
   // Enqueue pending jobs for this batch if not already queued
   if (DOMAINS && DOMAINS.length > 0) {
