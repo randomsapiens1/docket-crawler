@@ -125,7 +125,7 @@ export const seedWebsites = [
   { url: 'https://nbr.gov.bd', domain: 'nbr.gov.bd', tld: 'gov.bd', orgSlug: 'nbr', discoverySource: 'seed', verifiedGov: true },
   { url: 'https://www.bb.org.bd', domain: 'bb.org.bd', tld: 'org.bd', orgSlug: 'bangladesh-bank', discoverySource: 'seed', verifiedGov: true },
   { url: 'https://ecs.gov.bd', domain: 'ecs.gov.bd', tld: 'gov.bd', orgSlug: 'election-commission', discoverySource: 'seed', verifiedGov: true },
-  { url: 'https://www.brta.gov.bd', domain: 'brta.gov.bd', tld: 'gov.bd', orgSlug: 'brta', discoverySource: 'seed', verifiedGov: true },
+  { url: 'https://brta.gov.bd', domain: 'brta.gov.bd', tld: 'gov.bd', orgSlug: 'brta', discoverySource: 'seed', verifiedGov: true },
   { url: 'https://www.caab.gov.bd', domain: 'caab.gov.bd', tld: 'gov.bd', orgSlug: 'bangladesh-civil-aviation', discoverySource: 'seed', verifiedGov: true },
   { url: 'https://sec.gov.bd', domain: 'sec.gov.bd', tld: 'gov.bd', orgSlug: 'bsec', discoverySource: 'seed', verifiedGov: true },
   { url: 'https://bsti.gov.bd', domain: 'bsti.gov.bd', tld: 'gov.bd', orgSlug: 'bsti', discoverySource: 'seed', verifiedGov: true },
@@ -140,7 +140,7 @@ export const seedWebsites = [
 
   // ── Departments ───────────────────────────────────────────────────────────
   { url: 'https://www.police.gov.bd', domain: 'police.gov.bd', tld: 'gov.bd', orgSlug: 'bangladesh-police', discoverySource: 'seed', verifiedGov: true },
-  { url: 'https://www.dip.gov.bd', domain: 'dip.gov.bd', tld: 'gov.bd', orgSlug: 'dgip', discoverySource: 'seed', verifiedGov: true },
+  { url: 'https://dip.gov.bd', domain: 'dip.gov.bd', tld: 'gov.bd', orgSlug: 'dgip', discoverySource: 'seed', verifiedGov: true },
   { url: 'https://bdris.gov.bd', domain: 'bdris.gov.bd', tld: 'gov.bd', orgSlug: 'bdris', discoverySource: 'seed', verifiedGov: true },
   { url: 'https://services.nidw.gov.bd', domain: 'services.nidw.gov.bd', tld: 'gov.bd', orgSlug: 'nid-wing', discoverySource: 'seed', verifiedGov: true },
   { url: 'https://dghs.gov.bd', domain: 'dghs.gov.bd', tld: 'gov.bd', orgSlug: 'dghs', discoverySource: 'seed', verifiedGov: true },
