@@ -65,8 +65,8 @@ export default async function HomePage() {
 
       {/* Hero */}
       <div className="hero">
-        <div className="hero-eyebrow">A Docket.bd Observatory</div>
-        <h1>Bangladesh Government<br />Website Monitor</h1>
+        <div className="hero-eyebrow">Bangladesh · Live Observatory</div>
+        <h1>Docket.bd<br />Government Website Monitor</h1>
         <p>
           Docket crawls {fmt(totalSites)} official .gov.bd websites every week.
           Broken links, page health, and AI-scored citizen experience.
