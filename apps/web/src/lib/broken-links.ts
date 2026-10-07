@@ -13,8 +13,9 @@ export const latestRunIds = sql`(
   ORDER BY website_id, completed_at DESC
 )`;
 
-// Unique broken URLs per site (a nav link broken on 10 pages counts once),
-// from the latest run only. Pass websiteId to scope to one site.
+// Unique broken URLs per site (a nav link broken on 10 pages counts once).
+// Each site counts once at its latest crawl — re-crawls replace, never add.
+// Pass websiteId to scope to one site.
 export async function countBrokenLinks(db: Db, websiteId?: string): Promise<number> {
   const scope = websiteId ? sql`AND pl.website_id = ${websiteId}` : sql``;
   const result = await db.execute(sql`
@@ -26,6 +27,3 @@ export async function countBrokenLinks(db: Db, websiteId?: string): Promise<numb
   return Number((result.rows[0] as { count: number } | undefined)?.count ?? 0);
 }
 
-// Headline broken-link figure shown on the homepage and /api/v1/stats.
-// Fixed value: sum of the 20 most recent crawl runs as of 2026-10-07.
-export const BROKEN_LINKS_TOTAL = 8610;

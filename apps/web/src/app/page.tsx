@@ -1,5 +1,5 @@
 import { getDb } from '@/lib/db';
-import { BROKEN_LINKS_TOTAL } from '@/lib/broken-links';
+import { countBrokenLinks } from '@/lib/broken-links';
 import { websites, crawlRuns, organizations } from '@docket/db';
 import { eq, count, sql } from 'drizzle-orm';
 
@@ -12,7 +12,7 @@ async function getStats() {
       db.select({ count: count() }).from(websites),
       db.select({ count: count() }).from(websites).where(eq(websites.status, 'active')),
       db.select({ count: count() }).from(crawlRuns).where(eq(crawlRuns.status, 'completed')),
-      Promise.resolve([{ count: BROKEN_LINKS_TOTAL }]),
+      countBrokenLinks(db).then((count) => [{ count }]),
       db.select({ count: count() }).from(organizations),
     ]);
   return { websiteCount, activeCount, runCount, brokenCount, orgCount };
@@ -117,7 +117,7 @@ export default async function HomePage() {
           <div className="value" style={{ color: brokenTotal > 0 ? 'var(--brand)' : 'var(--green)' }}>
             {fmt(brokenTotal)}
           </div>
-          <div className="sub">found across all sites</div>
+          <div className="sub">latest crawl of each site</div>
         </div>
       </div>
 
