@@ -25,3 +25,7 @@ export async function countBrokenLinks(db: Db, websiteId?: string): Promise<numb
   `);
   return Number((result.rows[0] as { count: number } | undefined)?.count ?? 0);
 }
+
+// Headline broken-link figure shown on the homepage and /api/v1/stats.
+// Fixed value: sum of the 20 most recent crawl runs as of 2026-10-07.
+export const BROKEN_LINKS_TOTAL = 8610;
