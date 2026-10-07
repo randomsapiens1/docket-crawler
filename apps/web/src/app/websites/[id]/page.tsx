@@ -43,10 +43,13 @@ export default async function WebsiteDetailPage({ params }: { params: Promise<{ 
         })
         .from(pageLinks)
         .innerJoin(pages, eq(pageLinks.pageId, pages.id))
-        .where(and(eq(pageLinks.websiteId, id), eq(pageLinks.isBroken, true)))
+        .where(and(eq(pages.crawlRunId, latestRun.id), eq(pageLinks.isBroken, true)))
         .orderBy(sql`${pages.url} ASC`)
-        .limit(200)
+        .limit(1000)
     : [];
+
+  // A link broken on every page (e.g. in the nav) counts once
+  const uniqueBroken = new Set(brokenLinks.map((l) => l.href)).size;
 
   const byPage = new Map<string, { pageUrl: string; pageTitle: string | null; links: typeof brokenLinks }>();
   for (const link of brokenLinks) {
@@ -85,10 +88,10 @@ export default async function WebsiteDetailPage({ params }: { params: Promise<{ 
         </div>
         <div className="stat-card">
           <div className="label">Broken Links</div>
-          <div className="value" style={{ color: (latestRun?.brokenLinksFound ?? 0) > 0 ? 'var(--brand)' : 'var(--green)' }}>
-            {latestRun?.brokenLinksFound ?? '—'}
+          <div className="value" style={{ color: uniqueBroken > 0 ? 'var(--brand)' : 'var(--green)' }}>
+            {latestRun ? uniqueBroken : '—'}
           </div>
-          <div className="sub">detected this run</div>
+          <div className="sub">unique URLs, latest run</div>
         </div>
         <div className="stat-card">
           <div className="label">Crawl Runs</div>
@@ -144,7 +147,7 @@ export default async function WebsiteDetailPage({ params }: { params: Promise<{ 
         <>
           <div className="section-hdr">
             <h2>Broken Links</h2>
-            <span className="pill-red">{brokenLinks.length}</span>
+            <span className="pill-red">{uniqueBroken}</span>
           </div>
 
           {groupedPages.map((group, gi) => (

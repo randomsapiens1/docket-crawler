@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { websites, organizations, crawlRuns, aiAnalyses, pageLinks } from '@docket/db';
-import { eq, and, sql } from 'drizzle-orm';
+import { countBrokenLinks } from '@/lib/broken-links';
+import { websites, organizations, crawlRuns, aiAnalyses } from '@docket/db';
+import { eq, sql } from 'drizzle-orm';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -27,10 +28,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     ? await db.select().from(aiAnalyses).where(eq(aiAnalyses.crawlRunId, latestRun.id)).limit(1)
     : [];
 
-  const [brokenCount] = await db
-    .select({ count: sql<number>`count(*)`.mapWith(Number) })
-    .from(pageLinks)
-    .where(and(eq(pageLinks.websiteId, id), eq(pageLinks.isBroken, true)));
+  const brokenLinkCount = await countBrokenLinks(db, id);
 
   return NextResponse.json({
     data: {
@@ -38,7 +36,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       organization: site.organizations,
       latestRun,
       aiAnalysis: ai ?? null,
-      brokenLinkCount: brokenCount?.count ?? 0,
+      brokenLinkCount,
     },
   });
 }

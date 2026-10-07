@@ -141,7 +141,8 @@ async function crawlWebsite(websiteId: string, crawlRunId: string, rootUrl: stri
     ).onConflictDoNothing();
   }
 
-  const brokenCount = allLinks.filter((l) => checkedLinks.get(l.href)?.broken).length;
+  // Unique broken URLs — a nav link repeated on every page counts once
+  const brokenCount = [...checkedLinks.values()].filter((c) => c.broken).length;
 
   return { pagesCrawled, pagesErrored, brokenLinksFound: brokenCount };
 }
@@ -208,6 +209,10 @@ async function runBatch() {
       const { pagesCrawled, pagesErrored, brokenLinksFound } = await crawlWebsite(
         site.id, run.id, site.url
       );
+      // Unreachable site (DNS failure, every request errored) — not a clean result
+      if (pagesCrawled === 0) {
+        throw new Error(`No pages crawled (${pagesErrored} errored) — site unreachable`);
+      }
 
       // Run AI analysis on homepage
       try {

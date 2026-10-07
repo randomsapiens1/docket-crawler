@@ -1,14 +1,16 @@
 import { getDb } from '@/lib/db';
 import { pageLinks, websites, pages } from '@docket/db';
-import { eq, sql } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
+import { latestRunIds } from '@/lib/broken-links';
 
 export const dynamic = 'force-dynamic';
 
 export default async function IssuesPage() {
   const db = getDb();
 
+  // Latest run per site only, one row per broken URL (first page it was found on)
   const rows = await db
-    .select({
+    .selectDistinctOn([pageLinks.websiteId, pageLinks.href], {
       websiteId: websites.id,
       domain: websites.domain,
       href: pageLinks.href,
@@ -20,8 +22,8 @@ export default async function IssuesPage() {
     .from(pageLinks)
     .innerJoin(websites, eq(pageLinks.websiteId, websites.id))
     .innerJoin(pages, eq(pageLinks.pageId, pages.id))
-    .where(eq(pageLinks.isBroken, true))
-    .orderBy(sql`${websites.domain} ASC, ${pageLinks.href} ASC`)
+    .where(and(eq(pageLinks.isBroken, true), sql`${pages.crawlRunId} IN ${latestRunIds}`))
+    .orderBy(pageLinks.websiteId, pageLinks.href)
     .limit(500);
 
   const bySite = new Map<string, { domain: string; websiteId: string; links: typeof rows }>();
